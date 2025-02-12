@@ -1,0 +1,147 @@
+version: "3.8"
+
+services:
+  whaticket_backend:
+    image: whaticket-backend:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4196M
+    environment:
+      # POSTGRES
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres_whaticket
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=12345
+      - DB_NAME=whaticket
+      - TZ=America/Sao_Paulo
+
+      # BACKEND
+      - JWT_SECRET=kZaOTd+YZpjRUyyuQUpigJaEMk4vcW4YOymKPZX0Ts8=
+      - JWT_REFRESH_SECRET=dBSXqFg9TaNUEDXVp6fhMTRLBysP+j2DSqf7+raxD3A=
+      - PORT=3001
+      - PROXY_PORT=443
+      - BACKEND_URL=https://whapi.axisnetworks.com.br
+      - FRONTEND_URL=https://whafront.axisnetworks.com.br 
+      - CHROME_ARGS=--no-sandbox --disable-setuid-sandbox
+
+      # REDIS
+      - REDIS_URI=redis://:12345@whaticket_redis:6379
+      - REDIS_OPT_LIMITER_MAX=1
+      - REDIS_OPT_LIMITER_DURATION=3000
+
+    #labels:
+      #- "traefik.enable=true"
+      #- "traefik.http.routers.whaticket_backend.rule=Host(`whapi.axisnetworks.com.br`)"
+      #- "traefik.http.routers.whaticket_backend.entrypoints=websecure"
+      #- "traefik.http.routers.whaticket_backend.tls.certresolver=letsencryptresolver"
+      #- "traefik.http.routers.whaticket_backend.priority=1"
+      #- "traefik.http.routers.whaticket_backend.service=whaticket_backend"
+      #- "traefik.http.services.whaticket_backend.loadbalancer.server.port=3001"
+      #- "traefik.http.services.whaticket_backend.loadbalancer.passhostheader=true"
+      #- "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      #- "traefik.http.routers.whaticket_backend.middlewares=sslheader@docker"
+
+    volumes:
+      - whaticket_data:/var/lib/whaticket
+      - whaticket_public:/usr/src/app/public/
+    networks:
+      - minha_rede
+
+  whaticket_frontend:
+    image: whaticket-frontend:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4196M
+    environment:
+      - BACKEND_URL=https://whapi.axisnetworks.com.br
+      - REACT_APP_BACKEND_URL=https://whapi.axisnetworks.com.br
+      - REACT_APP_HOURS_CLOSE_TICKETS_AUTO=24
+
+    #labels:
+      #- "traefik.enable=true"
+      #- "traefik.http.routers.whaticket_frontend.rule=Host(`whafront.axisnetworks.com.br`)"
+      #- "traefik.http.routers.whaticket_frontend.entrypoints=websecure"
+      #- "traefik.http.routers.whaticket_frontend.tls.certresolver=letsencryptresolver"
+      #- "traefik.http.routers.whaticket_frontend.priority=1"
+      #- "traefik.http.routers.whaticket_frontend.service=whaticket_frontend"
+      #- "traefik.http.services.whaticket_frontend.loadbalancer.server.port=3250"
+      #- "traefik.http.services.whaticket_frontend.loadbalancer.passhostheader=true"
+      #- "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      #- "traefik.http.routers.whaticket_frontend.middlewares=sslheader@docker"
+
+    networks:
+      - minha_rede
+
+  postgres_whaticket:
+    image: postgres:13
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - whaticket_postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=whaticket
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345
+      - TZ=America/Sao_Paulo
+    networks:
+      - minha_rede
+
+  whaticket_redis:
+    image: redis:latest
+    command: redis-server --requirepass "12345"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - whaticket_redis:/data
+    networks:
+      - minha_rede
+
+networks:
+  minha_rede:
+    external: true
+    name: minha_rede
+
+volumes:
+  whaticket_data:
+    external: true
+    name: whaticket_data
+  whaticket_public:
+    external: true
+    name: whaticket_public
+  whaticket_postgres:
+    external: true
+    name: whaticket_postgres
+  whaticket_redis:
+    external: true
+    name: whaticket_redis
