@@ -21,7 +21,7 @@ Esse comando criará as imagens e os contêineres necessários para rodar o proj
 ## 🖥️ Configuração da Rede
 
 1. **Abra o Portainer** e **crie uma rede** com o nome de sua preferência.
-2. **Edite os arquivos de configuração** do projeto para garantir que a rede criada esteja definida corretamente no `docker-compose.yaml`.
+2. **Edite os arquivos de configuração** do projeto para garantir que a rede criada esteja definida corretamente no `whaticket.yaml`.
 
 ---
 
@@ -33,6 +33,8 @@ Atualmente, o projeto **ainda não está configurado para funcionar com o Traefi
 2. **Aponte os domínios para os serviços internos**, conforme o exemplo:
    - **Frontend**: `whafront.axisnetworks.com.br` → `http://whaticket_frontend:3250`
    - **Backend**: `whapi.axisnetworks.com.br` → `http://whaticket_backend:3001`
+
+whaticket_frontend e whaticket_backend corresponde o nome do serviço no docker
 
 ---
 
